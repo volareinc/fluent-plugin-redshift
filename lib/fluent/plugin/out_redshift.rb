@@ -60,7 +60,7 @@ class RedshiftOutput < BufferedOutput
     }
     @delimiter = determine_delimiter(@file_type) if @delimiter.nil? or @delimiter.empty?
     $log.debug format_log("redshift file_type:#{@file_type} delimiter:'#{@delimiter}'")
-    @copy_sql_template = "copy #{table_name_with_schema} #{colum_names} from '%s' CREDENTIALS 'aws_access_key_id=#{@aws_key_id};aws_secret_access_key=%s' delimiter '#{@delimiter}' GZIP ESCAPE #{@redshift_copy_base_options} #{@redshift_copy_options};"
+    @copy_sql_template = "copy #{table_name_with_schema} #{colum_names} from '%s' CREDENTIALS 'aws_access_key_id=#{@aws_key_id};aws_secret_access_key=%s' delimiter '#{@delimiter}' GZIP ESCAPE #{@redshift_copy_base_options} #{@redshift_copy_options} explicit_ids;"
   end
 
   def start
@@ -236,8 +236,15 @@ class RedshiftOutput < BufferedOutput
   def hash_to_table_text(redshift_table_columns, hash, delimiter)
     return "" unless hash
 
+    keys = []
+    if redshift_use_columns then
+      keys = redshift_use_columns.split(",")
+    else
+      keys = redshift_table_columns
+    end
+
     # extract values from hash
-    val_list = redshift_table_columns.collect do |cn|
+    val_list = keys.collect do |cn|
       val = hash[cn]
       val = JSON.generate(val) if val.kind_of?(Hash) or val.kind_of?(Array)
 
