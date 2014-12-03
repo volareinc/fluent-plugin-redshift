@@ -38,6 +38,7 @@ class RedshiftOutput < BufferedOutput
   config_param :redshift_copy_base_options, :string , :default => "FILLRECORD ACCEPTANYDATE TRUNCATECOLUMNS"
   config_param :redshift_copy_options, :string , :default => nil
   config_param :redshift_connect_timeout, :integer, :default => 10
+  config_param :redshift_use_columns, :string, :default => nil
   # file format
   config_param :file_type, :string, :default => nil  # json, tsv, csv, msgpack
   config_param :delimiter, :string, :default => nil
@@ -59,7 +60,7 @@ class RedshiftOutput < BufferedOutput
     }
     @delimiter = determine_delimiter(@file_type) if @delimiter.nil? or @delimiter.empty?
     $log.debug format_log("redshift file_type:#{@file_type} delimiter:'#{@delimiter}'")
-    @copy_sql_template = "copy #{table_name_with_schema} from '%s' CREDENTIALS 'aws_access_key_id=#{@aws_key_id};aws_secret_access_key=%s' delimiter '#{@delimiter}' GZIP ESCAPE #{@redshift_copy_base_options} #{@redshift_copy_options};"
+    @copy_sql_template = "copy #{table_name_with_schema} #{colum_names} from '%s' CREDENTIALS 'aws_access_key_id=#{@aws_key_id};aws_secret_access_key=%s' delimiter '#{@delimiter}' GZIP ESCAPE #{@redshift_copy_base_options} #{@redshift_copy_options};"
   end
 
   def start
@@ -284,6 +285,14 @@ class RedshiftOutput < BufferedOutput
                                   @redshift_tablename
                                 end
   end
+
+  def colum_names
+    if redshift_use_columns then
+      return "(#{redshift_use_columns})"
+    end
+    return ""
+  end
+
 end
 
 
